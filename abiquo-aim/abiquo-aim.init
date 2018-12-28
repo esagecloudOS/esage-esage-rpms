@@ -1,0 +1,85 @@
+#!/bin/sh 
+#
+# chkconfig: 2345 99 99
+# description: Starts the required Abiquo AIM daemons
+#
+# Source function library.
+. /etc/init.d/functions
+
+PATH=/sbin:/bin:/usr/sbin:/usr/bin
+LOGFILE=/var/log/messages
+NAME="abiquo-aim"
+PIDFILE=/var/run/${NAME}.pid
+
+RETVAL=0
+
+start()
+{
+#  echo -n "Starting abiquo-aim"
+
+  status libvirtd > /dev/null
+  RETVAL=$?
+
+  if [ $RETVAL -ne 0 ]; then
+    /etc/init.d/libvirtd start
+  fi
+  
+  echo -n $"Starting AIM daemon: "
+  /usr/sbin/abiquo-aim --config-file /etc/abiquo-aim.ini -d >> $LOGFILE 2>&1
+  RETVAL=$?
+  if [ $RETVAL -eq 0 ]; then
+    pidof abiquo-aim > $PIDFILE
+    success
+    echo
+  fi
+}
+
+stop()
+{
+  /etc/init.d/libvirtd stop
+
+  echo -n $"Stopping AIM daemon: "
+
+  if [ ! -f $PIDFILE ]; then
+     success && echo && exit 0
+  else  
+     PID=`cat ${PIDFILE}`
+     if [ "$PID" -ne "0" ]; then
+       kill -9  $PID
+       rm $PIDFILE
+       success
+       echo
+     fi
+  fi
+ 
+}
+
+run_status()
+{
+  status -p $PIDFILE abiquo-aim
+}
+
+
+case "$1" in
+  start)
+    start
+    RETVAL=$?
+    ;;
+  stop)
+    stop
+    RETVAL=$?
+    ;;
+  restart)
+    stop
+    start
+    RETVAL=$?
+    ;;
+  status)
+    run_status
+    RETVAL=$?
+    ;;
+  *)
+    echo $"Usage: $0 {start|stop|restart}"
+    exit 1
+esac
+exit $RETVAL

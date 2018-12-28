@@ -1,0 +1,8 @@
+/opt/abiquo/tomcat/logs/catalina.out { 
+    daily
+    size 100M 
+    rotate 7 
+    compress 
+    copytruncate 
+    missingok 
+}
